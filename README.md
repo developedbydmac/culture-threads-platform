@@ -7,6 +7,22 @@
 
 > **A production-grade e-commerce microservices demonstration platform, rebuilt from the Google Cloud Microservices Demo with enterprise-level Site Reliability Engineering (SRE) practices.**
 
+---
+
+## 🚀 **Quick Start** - Get Running in 30 Minutes!
+
+**👉 New to the project? Start here: [Quick Start Guide](./docs/QUICK_START.md)**
+
+```bash
+# Install: Docker Desktop, kubectl, Skaffold
+# Deploy: skaffold dev
+# Access: http://localhost:8080
+```
+
+**Current Phase:** Week 2 - Local Development & Hands-On Learning 🎯
+
+---
+
 ## 📖 Project Overview
 
 Culture Threads Platform is an advanced cloud-native microservices architecture project designed to demonstrate real-world enterprise practices in distributed systems. This platform showcases:
@@ -250,63 +266,196 @@ This project follows a **manual deconstruction and rebuild** approach:
 
 ---
 
-## 🚦 Getting Started
+## � Getting Started - Week 2 Setup
 
-### Prerequisites
+### Current Status: Ready for Week 2! 🎯
 
+**Week 1 Complete ✅**: Architecture analyzed, documentation created  
+**Week 2 Starting 🔄**: Local deployment and hands-on learning
+
+---
+
+### Prerequisites (Install These First)
+
+#### 1. Docker Desktop (Required)
 ```bash
-# Required tools
-- Docker Desktop or Docker Engine
-- kubectl (Kubernetes CLI)
-- Skaffold (for local development)
-- Terraform (for infrastructure)
-- Helm (for package management)
-- gcloud CLI (for GCP deployment)
+# macOS - Download and install
+# Visit: https://www.docker.com/products/docker-desktop
+
+# Verify installation
+docker --version
+# Expected: Docker version 24.x or higher
+
+# Configure Docker Desktop:
+# Settings → Resources → Memory: 8GB minimum
+# Settings → Resources → CPUs: 4 minimum
+# Settings → Kubernetes → Enable Kubernetes ✅
 ```
 
-### Quick Start (Local Development)
-
+#### 2. kubectl (Kubernetes CLI)
 ```bash
-# 1. Clone the repository
-git clone https://github.com/developedbydmac/culture-threads-platform.git
-cd culture-threads-platform
+# macOS installation
+brew install kubectl
 
-# 2. Install dependencies
-# (Instructions vary by service - see individual service READMEs)
+# Verify installation
+kubectl version --client
+# Expected: Client Version: v1.28.x or higher
+```
 
-# 3. Build and run with Skaffold
+#### 3. Skaffold (Development Tool)
+```bash
+# macOS installation
+brew install skaffold
+
+# Verify installation
+skaffold version
+# Expected: v2.x or higher
+```
+
+#### 4. Optional Tools (Install as Needed)
+```bash
+# grpcurl - for testing gRPC endpoints
+brew install grpcurl
+
+# k9s - Kubernetes dashboard (highly recommended)
+brew install k9s
+
+# helm - package manager (for later)
+brew install helm
+```
+
+---
+
+### Quick Start - Local Development (Week 2)
+
+#### Step 1: Verify Your Setup
+```bash
+# Check Docker is running
+docker ps
+# Should show: CONTAINER ID   IMAGE   COMMAND   ...
+
+# Check Kubernetes is enabled in Docker Desktop
+kubectl cluster-info
+# Should show: Kubernetes control plane is running...
+
+# Check Skaffold
+skaffold version
+```
+
+#### Step 2: Deploy All Services Locally
+```bash
+# From project root
+cd /path/to/culture-threads-platform
+
+# Run Skaffold (this will take 10-20 minutes first time)
 skaffold dev
 
-# 4. Access the application
+# What this does:
+# 1. Builds Docker images for all 12 services
+# 2. Deploys to your local Kubernetes cluster
+# 3. Watches for file changes (hot reload)
+# 4. Shows logs from all services
+
+# ⚠️ Common first-time issues:
+# - "port 8080 already in use" → kill process or use different port
+# - Build takes forever → normal for first build (uses cache after)
+# - Pod CrashLoopBackOff → check logs, usually Redis timing issue
+```
+
+#### Step 3: Access the Application
+```bash
+# Option 1: Port forward (if LoadBalancer pending)
+kubectl port-forward svc/frontend 8080:80
+
+# Option 2: Get external IP (if LoadBalancer works)
+kubectl get service frontend-external
+
+# Open browser
 open http://localhost:8080
 ```
 
-### Deploy to Kubernetes
-
+#### Step 4: Verify All Services Running
 ```bash
-# Deploy using kubectl
-kubectl apply -f ./kubernetes-manifests/
+# Check all pods
+kubectl get pods
 
-# Or deploy using Helm
-helm install culture-threads ./helm-chart/
-
-# Or deploy using Kustomize
-kubectl apply -k ./kustomize/
+# Expected output (all should show Running):
+# NAME                          READY   STATUS    RESTARTS   AGE
+# adservice-xxx                 1/1     Running   0          5m
+# cartservice-xxx               1/1     Running   0          5m
+# checkoutservice-xxx           1/1     Running   0          5m
+# currencyservice-xxx           1/1     Running   0          5m
+# emailservice-xxx              1/1     Running   0          5m
+# frontend-xxx                  1/1     Running   0          5m
+# paymentservice-xxx            1/1     Running   0          5m
+# productcatalogservice-xxx     1/1     Running   0          5m
+# recommendationservice-xxx     1/1     Running   0          5m
+# redis-cart-xxx                1/1     Running   0          5m
+# shippingservice-xxx           1/1     Running   0          5m
+# shoppingassistantservice-xxx  1/1     Running   0          5m
 ```
 
-### Infrastructure Provisioning (Terraform)
+---
+
+### Alternative: Simple kubectl Deployment
+
+If Skaffold has issues, use direct kubectl deployment:
 
 ```bash
-cd terraform/
+# Deploy using pre-built images
+kubectl apply -f ./kubernetes-manifests/
 
-# Initialize Terraform
-terraform init
+# Wait for pods to be ready (2-5 minutes)
+kubectl get pods -w
 
-# Review the plan
-terraform plan
+# Access frontend
+kubectl port-forward svc/frontend 8080:80
+open http://localhost:8080
+```
 
-# Apply infrastructure
-terraform apply
+---
+
+### Troubleshooting Common Issues
+
+#### Issue: "Port 8080 already in use"
+```bash
+# Find what's using port 8080
+lsof -i :8080
+
+# Kill the process
+kill -9 <PID>
+
+# Or use different port
+kubectl port-forward svc/frontend 8081:80
+```
+
+#### Issue: "Pod CrashLoopBackOff"
+```bash
+# Check logs
+kubectl logs <pod-name>
+
+# Describe pod for events
+kubectl describe pod <pod-name>
+
+# Common cause: Redis not ready before cart service starts
+# Solution: Wait a minute and check again
+```
+
+#### Issue: "ImagePullBackOff"
+```bash
+# If using Skaffold, rebuild
+skaffold delete
+skaffold dev
+
+# If using kubectl, check image names
+kubectl describe pod <pod-name>
+```
+
+#### Issue: "Cannot connect to Docker daemon"
+```bash
+# Make sure Docker Desktop is running
+# Check Docker → Preferences → Resources
+# Restart Docker Desktop if needed
 ```
 
 ---
